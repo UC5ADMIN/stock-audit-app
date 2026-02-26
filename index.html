@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stock Audit App</title>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(180deg, #f5f5f7 0%, #e8e8ed 100%);
+            min-height: 100vh;
+            padding: 0;
+            color: #1d1d1f;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        h1 {
+            color: #1d1d1f;
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        h2 {
+            color: #1d1d1f;
+            margin-bottom: 16px;
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+
+        .setup-section {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #1d1d1f;
+            font-size: 15px;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 14px 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            background: rgba(142, 142, 147, 0.12);
+            color: #1d1d1f;
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            outline: none;
+            background: rgba(142, 142, 147, 0.18);
+            transform: scale(1.01);
+        }
+
+        input::placeholder {
+            color: rgba(60, 60, 67, 0.3);
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 12px;
+            letter-spacing: -0.3px;
+        }
+
+        button:hover {
+            background: #0051d5;
+            transform: scale(1.02);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background: rgba(60, 60, 67, 0.3);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .secondary-btn {
+            background: #ff3b30;
+        }
+
+        .secondary-btn:hover {
+            background: #d70015;
+        }
+
+        .success-btn {
+            background: #34c759;
+        }
+
+        .success-btn:hover {
+            background: #248a3d;
+        }
+
+        #reader {
+            border-radius: 16px;
+            overflow: hidden;
+            margin: 16px 0;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .status {
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin: 12px 0;
+            font-weight: 500;
+            text-align: center;
+            font-size: 15px;
+        }
+
+        .status.success {
+            background: rgba(52, 199, 89, 0.15);
+            color: #248a3d;
+        }
+
+        .status.error {
+            background: rgba(255, 59, 48, 0.15);
+            color: #d70015;
+        }
+
+        .status.info {
+            background: rgba(0, 122, 255, 0.15);
+            color: #0051d5;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #007aff 0%, #0051d5 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 14px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+        }
+
+        .stat-box.success {
+            background: linear-gradient(135deg, #34c759 0%, #248a3d 100%);
+            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.2);
+        }
+
+        .stat-box.warning {
+            background: linear-gradient(135deg, #ff9500 0%, #ff6482 100%);
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.2);
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            display: block;
+            letter-spacing: -1px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .scanned-items {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .scanned-items::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .scanned-items::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scanned-items::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        .item {
+            padding: 14px 16px;
+            background: rgba(142, 142, 147, 0.08);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .item:active {
+            transform: scale(0.98);
+        }
+
+        .item.matched {
+            background: rgba(52, 199, 89, 0.12);
+            border-left-color: #34c759;
+        }
+
+        .item.mismatch {
+            background: rgba(0, 122, 255, 0.12);
+            border-left-color: #007aff;
+        }
+
+        .item.extra {
+            background: rgba(0, 122, 255, 0.12);
+            border-left-color: #007aff;
+        }
+
+        .item.missing {
+            background: rgba(255, 59, 48, 0.12);
+            border-left-color: #ff3b30;
+        }
+
+        .item.duplicate {
+            background: rgba(255, 149, 0, 0.12);
+            border-left: 3px solid #ff9500;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-sku {
+            font-weight: 600;
+            color: #1d1d1f;
+            font-size: 15px;
+            letter-spacing: -0.2px;
+        }
+
+        .item-name {
+            color: rgba(60, 60, 67, 0.6);
+            font-size: 13px;
+            margin-top: 2px;
+        }
+
+        .item-count {
+            background: #007aff;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-left: 12px;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .status-badge.matched {
+            background: #34c759;
+            color: white;
+        }
+
+        .status-badge.mismatch {
+            background: #007aff;
+            color: white;
+        }
+
+        .status-badge.extra {
+            background: #007aff;
+            color: white;
+        }
+
+        .status-badge.missing {
+            background: #ff3b30;
+            color: white;
+        }
+
+        .discrepancy-list {
+            margin-top: 16px;
+        }
+
+        .discrepancy-item {
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border-left: 3px solid;
+            transition: all 0.2s ease;
+        }
+
+        .discrepancy-item:active {
+            transform: scale(0.98);
+        }
+
+        .discrepancy-item.missing {
+            border-left-color: #ff3b30;
+            background: rgba(255, 59, 48, 0.08);
+        }
+
+        .discrepancy-item.extra {
+            border-left-color: #ff9500;
+            background: rgba(255, 149, 0, 0.08);
+        }
+
+        .discrepancy-item.mismatch {
+            border-left-color: #007aff;
+            background: rgba(0, 122, 255, 0.08);
+        }
+
+        .matched-item {
+            padding: 14px 16px;
+            background: rgba(52, 199, 89, 0.12);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid #34c759;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .matched-item:active {
+            transform: scale(0.98);
+        }
+
+        .matched-item-info {
+            flex: 1;
+        }
+
+        .matched-item-sku {
+            font-weight: 600;
+            color: #1d1d1f;
+            font-size: 15px;
+            letter-spacing: -0.2px;
+        }
+
+        .matched-item-name {
+            color: rgba(60, 60, 67, 0.6);
+            font-size: 13px;
+            margin-top: 2px;
+        }
+
+        .matched-item-qty {
+            background: #34c759;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .discrepancy-header {
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+            color: #1d1d1f;
+        }
+
+        .discrepancy-details {
+            font-size: 13px;
+            color: rgba(60, 60, 67, 0.6);
+            margin-top: 6px;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .badge.missing {
+            background: #ff3b30;
+            color: white;
+        }
+
+        .badge.extra {
+            background: #ff9500;
+            color: white;
+        }
+
+        .badge.mismatch {
+            background: #007aff;
+            color: white;
+        }
+
+        .export-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .export-btn {
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+            letter-spacing: -0.2px;
+        }
+
+        .export-btn.excel {
+            background: #34c759;
+        }
+
+        .export-btn.excel:hover {
+            background: #248a3d;
+        }
+
+        .export-btn.pdf {
+            background: #ff3b30;
+        }
+
+        .export-btn.pdf:hover {
+            background: #d70015;
+        }
+
+        .export-btn:active {
+            transform: scale(0.96);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .help-text {
+            font-size: 13px;
+            color: rgba(60, 60, 67, 0.6);
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+
+        .scan-feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: white;
+            padding: 24px 40px;
+            border-radius: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            z-index: 1000;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: fadeInOut 1s ease-in-out;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        .instruction-box {
+            background: rgba(0, 122, 255, 0.08);
+            border-left: 3px solid #007aff;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
+        }
+
+        .instruction-box strong {
+            color: #1d1d1f;
+            font-weight: 600;
+        }
+
+        .instruction-box ol {
+            margin-left: 20px;
+            margin-top: 12px;
+        }
+
+        .instruction-box li {
+            margin-bottom: 8px;
+            color: rgba(60, 60, 67, 0.85);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 480px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 28px;
+            }
+            
+            .container {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Stock Audit</h1>
+
+        <!-- Setup Section -->
+        <div id="setupSection" class="card">
+            <h2>Load Inventory</h2>
+            
+            <div class="instruction-box">
+                <strong>Quick Start:</strong>
+                <ol>
+                    <li>Make sure your Google Sheet has columns: <strong>SKU | PRODUCT Name | Quantity</strong></li>
+                    <li>Share your Google Sheet: Click "Share" → "Anyone with the link can view"</li>
+                    <li>Enter the sheet name and range below (e.g., Sheet1!A1:C100)</li>
+                    <li>Click "Load Inventory" to begin</li>
+                </ol>
+                <div style="margin-top: 12px; padding: 10px; background: rgba(255, 149, 0, 0.1); border-radius: 8px; font-size: 13px;">
+                    <strong>⚠️ Troubleshooting:</strong><br>
+                    • Sheet must be publicly viewable<br>
+                    • Range must include headers in row 1<br>
+                    • Check browser console (F12) for errors
+                </div>
+            </div>
+
+            <div class="setup-section">
+                <label for="sheetRange">Sheet Range:</label>
+                <input type="text" id="sheetRange" placeholder="Sheet1!A1:C100" value="Sheet1!A1:C100">
+                <div class="help-text">Format: SheetName!StartCell:EndCell (e.g., Sheet1!A1:C100)</div>
+            </div>
+
+            <button onclick="loadInventory()">Load Inventory</button>
+            <div id="setupStatus"></div>
+        </div>
+
+        <!-- Scanner Section -->
+        <div id="scannerSection" class="card hidden">
+            <h2>Scan Items</h2>
+            
+            <div class="stats">
+                <div class="stat-box">
+                    <span class="stat-number" id="totalItems">0</span>
+                    <span class="stat-label">Total SKUs</span>
+                </div>
+                <div class="stat-box success">
+                    <span class="stat-number" id="scannedCount">0</span>
+                    <span class="stat-label">Scanned</span>
+                </div>
+                <div class="stat-box warning">
+                    <span class="stat-number" id="uniqueScanned">0</span>
+                    <span class="stat-label">Unique</span>
+                </div>
+            </div>
+
+            <button id="startScanBtn" onclick="startScanner()">Start Scanner</button>
+            <button id="stopScanBtn" class="secondary-btn hidden" onclick="stopScanner()">Stop Scanner</button>
+            <button id="manualScanBtn" class="hidden" onclick="allowManualScan()" style="background: #ff9500; margin-top: 10px;">Scan Same Item Again</button>
+            
+            <div id="reader"></div>
+            <div id="scanStatus"></div>
+
+            <div class="scanned-items">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="color: #667eea; margin: 0;">Scanned Items:</h3>
+                    <div style="font-size: 11px; color: #666;">
+                        <span style="color: #28a745;">●</span> Match
+                        <span style="color: #17a2b8; margin-left: 8px;">●</span> Mismatch/Extra
+                    </div>
+                </div>
+                <div id="scannedList"></div>
+            </div>
+
+            <div class="scanned-items" style="margin-top: 20px;">
+                <h3 style="color: #ff6b6b; margin-bottom: 10px;">Missing Items (Not Scanned Yet):</h3>
+                <div id="missingList"></div>
+            </div>
+
+            <button class="success-btn" onclick="showComparison()" style="margin-top: 20px;">Generate Report</button>
+        </div>
+
+        <!-- Comparison Section -->
+        <div id="comparisonSection" class="card hidden">
+            <h2>Audit Report</h2>
+            
+            <div class="stats">
+                <div class="stat-box success">
+                    <span class="stat-number" id="matchCount">0</span>
+                    <span class="stat-label">Matched</span>
+                </div>
+                <div class="stat-box" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);">
+                    <span class="stat-number" id="missingCount">0</span>
+                    <span class="stat-label">Missing</span>
+                </div>
+                <div class="stat-box warning">
+                    <span class="stat-number" id="extraCount">0</span>
+                    <span class="stat-label">Extra</span>
+                </div>
+            </div>
+
+            <div class="export-buttons">
+                <button class="export-btn excel" onclick="exportToExcel()">Download Excel</button>
+                <button class="export-btn pdf" onclick="exportToPDF()">Download PDF</button>
+            </div>
+
+            <div id="discrepancyResults"></div>
+
+            <div id="matchedItemsSection" style="margin-top: 20px;">
+                <h3 style="color: #10b981; margin-bottom: 15px;">✅ Matched Items (Correct Quantity):</h3>
+                <div id="matchedItemsList"></div>
+            </div>
+
+            <button onclick="resetAudit()" style="margin-top: 20px;">Start New Audit</button>
+        </div>
+    </div>
+
+    <script>
+        console.log('Stock Audit App - Script loaded successfully');
+        
+        // Hardcoded credentials
+        const API_KEY = 'AIzaSyCGcOb2oB7717oB02q-EmUhujVee9Oilc0';
+        const SHEET_ID = '1z_0aV_trLsnHeSQ_L1BHaNlPUcG3taMNJjGdHtyryy8';
+        
+        let inventory = [];
+        let scannedItems = {};
+        let html5QrcodeScanner = null;
+        let lastScannedCode = null;
+        let lastScanTime = 0;
+        const SCAN_COOLDOWN = 2000; // 2 seconds cooldown between same code scans
+
+        // Make function globally accessible
+        window.loadInventory = async function() {
+            console.log('loadInventory called');
+            const sheetRange = document.getElementById('sheetRange').value.trim();
+            console.log('Sheet range:', sheetRange);
+            
+            if (!sheetRange) {
+                showStatus('setupStatus', 'Please enter the sheet range', 'error');
+                return;
+            }
+
+            showStatus('setupStatus', 'Loading inventory...', 'info');
+
+            try {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${sheetRange}?key=${API_KEY}`;
+                console.log('Fetching URL:', url);
+                
+                const response = await fetch(url);
+                console.log('Response status:', response.status);
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (data.error) {
+                    console.error('API Error:', data.error);
+                    throw new Error(data.error.message || JSON.stringify(data.error));
+                }
+
+                if (!data.values || data.values.length < 2) {
+                    throw new Error('Sheet is empty or has no data rows. Make sure your sheet has: Row 1 = Headers (SKU, PRODUCT Name, Quantity), Row 2+ = Data');
+                }
+
+                // Parse inventory (skip header row)
+                inventory = [];
+                for (let i = 1; i < data.values.length; i++) {
+                    const row = data.values[i];
+                    if (row[0]) { // Only if SKU exists
+                        inventory.push({
+                            sku: row[0].toString().trim(),
+                            name: row[1] ? row[1].toString().trim() : 'Unknown',
+                            quantity: row[2] ? parseInt(row[2]) : 0
+                        });
+                    }
+                }
+
+                console.log('Parsed inventory:', inventory.length, 'items');
+
+                if (inventory.length === 0) {
+                    throw new Error('No valid inventory items found. Check that your SKU column has data.');
+                }
+
+                showStatus('setupStatus', `✅ Loaded ${inventory.length} items successfully!`, 'success');
+                document.getElementById('totalItems').textContent = inventory.length;
+                
+                // Show scanner section
+                setTimeout(() => {
+                    document.getElementById('setupSection').classList.add('hidden');
+                    document.getElementById('scannerSection').classList.remove('hidden');
+                }, 1000);
+
+            } catch (error) {
+                console.error('Load inventory error:', error);
+                let errorMessage = error.message;
+                
+                // Provide more helpful error messages
+                if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
+                    errorMessage = '❌ API Key Error: Access forbidden. Make sure your API key is valid and has Google Sheets API enabled.';
+                } else if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+                    errorMessage = '❌ Sheet Not Found: Check your Sheet ID is correct and the sheet is shared publicly.';
+                } else if (errorMessage.includes('400') || errorMessage.includes('Bad Request')) {
+                    errorMessage = '❌ Invalid Range: Check your sheet range format (e.g., Sheet1!A1:C100).';
+                } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+                    errorMessage = '❌ Network Error: Check your internet connection.';
+                } else {
+                    errorMessage = `❌ Error: ${errorMessage}`;
+                }
+                
+                showStatus('setupStatus', errorMessage, 'error');
+            }
+        }
+
+        window.startScanner = function() {
+            const reader = document.getElementById('reader');
+            
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanError
+            );
+
+            document.getElementById('startScanBtn').classList.add('hidden');
+            document.getElementById('stopScanBtn').classList.remove('hidden');
+            document.getElementById('manualScanBtn').classList.remove('hidden');
+            showStatus('scanStatus', '📷 Scanner active - point at QR code (2 sec cooldown between scans)', 'info');
+        }
+
+        window.stopScanner = function() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    document.getElementById('startScanBtn').classList.remove('hidden');
+                    document.getElementById('stopScanBtn').classList.add('hidden');
+                    document.getElementById('manualScanBtn').classList.add('hidden');
+                    showStatus('scanStatus', '⏸️ Scanner stopped', 'info');
+                });
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            const sku = decodedText.trim();
+            const currentTime = Date.now();
+            
+            // Check if this is the same code scanned within cooldown period
+            if (sku === lastScannedCode && (currentTime - lastScanTime) < SCAN_COOLDOWN) {
+                // Ignore this scan - too quick
+                return;
+            }
+            
+            // Update last scan info
+            lastScannedCode = sku;
+            lastScanTime = currentTime;
+            
+            // Find item in inventory
+            const item = inventory.find(i => i.sku === sku);
+            
+            // Add to scanned items
+            if (!scannedItems[sku]) {
+                scannedItems[sku] = {
+                    sku: sku,
+                    name: item ? item.name : 'Unknown Item',
+                    count: 0
+                };
+            }
+            scannedItems[sku].count++;
+
+            // Update UI
+            updateScannedList();
+            updateStats();
+            
+            // Show feedback
+            const feedbackMessage = item ? `✅ ${item.name} (${scannedItems[sku].count}x)` : '✅ Unknown Item';
+            showScanFeedback(feedbackMessage);
+            
+            // Play sound (optional)
+            playBeep();
+        }
+
+        function onScanError(errorMessage) {
+            // Ignore scan errors (they happen constantly while scanning)
+        }
+
+        window.allowManualScan = function() {
+            // Reset cooldown to allow immediate scan of the same item
+            lastScannedCode = null;
+            lastScanTime = 0;
+            showScanFeedback('✅ Ready to scan again!');
+        }
+
+        function updateScannedList() {
+            const listElement = document.getElementById('scannedList');
+            listElement.innerHTML = '';
+
+            const sortedItems = Object.values(scannedItems).sort((a, b) => b.count - a.count);
+
+            sortedItems.forEach(item => {
+                // Find if item exists in inventory
+                const inventoryItem = inventory.find(i => i.sku === item.sku);
+                
+                // Determine status
+                let statusClass = '';
+                let statusText = '';
+                
+                if (!inventoryItem) {
+                    // Item not in inventory - Extra item
+                    statusClass = 'extra';
+                    statusText = 'Extra';
+                } else if (item.count === inventoryItem.quantity) {
+                    // Perfect match
+                    statusClass = 'matched';
+                    statusText = 'Match';
+                } else {
+                    // Quantity mismatch
+                    statusClass = 'mismatch';
+                    statusText = 'Mismatch';
+                }
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `item ${statusClass}`;
+                itemDiv.innerHTML = `
+                    <div class="item-info">
+                        <div class="item-sku">${item.sku}</div>
+                        <div class="item-name">${item.name}</div>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                        <span class="item-count">${item.count}x</span>
+                    </div>
+                `;
+                listElement.appendChild(itemDiv);
+            });
+
+            // Update missing items list
+            updateMissingList();
+        }
+
+        function updateMissingList() {
+            const missingListElement = document.getElementById('missingList');
+            missingListElement.innerHTML = '';
+
+            // Find items in inventory that haven't been scanned
+            const missingItems = inventory.filter(item => !scannedItems[item.sku]);
+
+            if (missingItems.length === 0) {
+                missingListElement.innerHTML = '<div class="status success">✅ All items scanned!</div>';
+                return;
+            }
+
+            missingItems.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'item missing';
+                itemDiv.innerHTML = `
+                    <div class="item-info">
+                        <div class="item-sku">${item.sku}</div>
+                        <div class="item-name">${item.name}</div>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span class="status-badge missing">Missing</span>
+                        <span class="item-count">${item.quantity}x</span>
+                    </div>
+                `;
+                missingListElement.appendChild(itemDiv);
+            });
+        }
+
+        function updateStats() {
+            const totalScanned = Object.values(scannedItems).reduce((sum, item) => sum + item.count, 0);
+            const uniqueScanned = Object.keys(scannedItems).length;
+
+            document.getElementById('scannedCount').textContent = totalScanned;
+            document.getElementById('uniqueScanned').textContent = uniqueScanned;
+        }
+
+        window.showComparison = function() {
+            const scannedSKUs = Object.keys(scannedItems);
+            const inventorySKUs = inventory.map(i => i.sku);
+
+            // Calculate discrepancies
+            const missing = [];
+            const extra = [];
+            const mismatch = [];
+            const matched = [];
+
+            // Check for missing items (in inventory but not scanned)
+            inventory.forEach(item => {
+                if (!scannedItems[item.sku]) {
+                    missing.push({
+                        sku: item.sku,
+                        name: item.name,
+                        expected: item.quantity
+                    });
+                } else {
+                    // Check quantity mismatch
+                    const scannedQty = scannedItems[item.sku].count;
+                    if (scannedQty !== item.quantity) {
+                        mismatch.push({
+                            sku: item.sku,
+                            name: item.name,
+                            expected: item.quantity,
+                            scanned: scannedQty,
+                            difference: scannedQty - item.quantity
+                        });
+                    } else {
+                        matched.push({
+                            sku: item.sku,
+                            name: item.name,
+                            quantity: item.quantity
+                        });
+                    }
+                }
+            });
+
+            // Check for extra items (scanned but not in inventory)
+            scannedSKUs.forEach(sku => {
+                if (!inventorySKUs.includes(sku)) {
+                    extra.push({
+                        sku: sku,
+                        name: scannedItems[sku].name,
+                        scanned: scannedItems[sku].count
+                    });
+                }
+            });
+
+            // Store for export
+            window.auditResults = { missing, extra, mismatch, matched };
+
+            // Update stats
+            document.getElementById('matchCount').textContent = matched.length;
+            document.getElementById('missingCount').textContent = missing.length;
+            document.getElementById('extraCount').textContent = extra.length;
+
+            // Display results
+            const resultsDiv = document.getElementById('discrepancyResults');
+            resultsDiv.innerHTML = '';
+
+            if (missing.length === 0 && extra.length === 0 && mismatch.length === 0) {
+                resultsDiv.innerHTML = '<div class="status success">🎉 Perfect match! No discrepancies found.</div>';
+            } else {
+                // Missing items
+                if (missing.length > 0) {
+                    resultsDiv.innerHTML += '<h3 style="color: #ff6b6b; margin-top: 20px;">❌ Missing Items (Not Scanned):</h3><div class="discrepancy-list">';
+                    missing.forEach(item => {
+                        resultsDiv.innerHTML += `
+                            <div class="discrepancy-item missing">
+                                <div class="discrepancy-header">
+                                    <span>${item.name}</span>
+                                    <span class="badge missing">Missing</span>
+                                </div>
+                                <div class="discrepancy-details">
+                                    SKU: ${item.sku} | Expected: ${item.expected}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    resultsDiv.innerHTML += '</div>';
+                }
+
+                // Quantity mismatches
+                if (mismatch.length > 0) {
+                    resultsDiv.innerHTML += '<h3 style="color: #4facfe; margin-top: 20px;">⚠️ Quantity Mismatches:</h3><div class="discrepancy-list">';
+                    mismatch.forEach(item => {
+                        const sign = item.difference > 0 ? '+' : '';
+                        resultsDiv.innerHTML += `
+                            <div class="discrepancy-item mismatch">
+                                <div class="discrepancy-header">
+                                    <span>${item.name}</span>
+                                    <span class="badge mismatch">Mismatch</span>
+                                </div>
+                                <div class="discrepancy-details">
+                                    SKU: ${item.sku} | Expected: ${item.expected} | Scanned: ${item.scanned} | Diff: ${sign}${item.difference}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    resultsDiv.innerHTML += '</div>';
+                }
+
+                // Extra items
+                if (extra.length > 0) {
+                    resultsDiv.innerHTML += '<h3 style="color: #feca57; margin-top: 20px;">➕ Extra Items (Not in Inventory):</h3><div class="discrepancy-list">';
+                    extra.forEach(item => {
+                        resultsDiv.innerHTML += `
+                            <div class="discrepancy-item extra">
+                                <div class="discrepancy-header">
+                                    <span>${item.name}</span>
+                                    <span class="badge extra">Extra</span>
+                                </div>
+                                <div class="discrepancy-details">
+                                    SKU: ${item.sku} | Scanned: ${item.scanned}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    resultsDiv.innerHTML += '</div>';
+                }
+            }
+
+            // Display matched items
+            const matchedListDiv = document.getElementById('matchedItemsList');
+            matchedListDiv.innerHTML = '';
+
+            if (matched.length > 0) {
+                matched.forEach(item => {
+                    const matchedDiv = document.createElement('div');
+                    matchedDiv.className = 'matched-item';
+                    matchedDiv.innerHTML = `
+                        <div class="matched-item-info">
+                            <div class="matched-item-sku">${item.sku}</div>
+                            <div class="matched-item-name">${item.name}</div>
+                        </div>
+                        <div class="matched-item-qty">✓ ${item.quantity}</div>
+                    `;
+                    matchedListDiv.appendChild(matchedDiv);
+                });
+            } else {
+                matchedListDiv.innerHTML = '<div class="status info">No items matched the expected quantity.</div>';
+            }
+
+            // Show comparison section
+            stopScanner();
+            document.getElementById('scannerSection').classList.add('hidden');
+            document.getElementById('comparisonSection').classList.remove('hidden');
+        }
+
+        window.resetAudit = function() {
+            scannedItems = {};
+            lastScannedCode = null;
+            lastScanTime = 0;
+            document.getElementById('comparisonSection').classList.add('hidden');
+            document.getElementById('scannerSection').classList.remove('hidden');
+            document.getElementById('scannedList').innerHTML = '';
+            document.getElementById('scannedCount').textContent = '0';
+            document.getElementById('uniqueScanned').textContent = '0';
+            showStatus('scanStatus', 'Ready to scan', 'info');
+        }
+
+        function showStatus(elementId, message, type) {
+            const statusDiv = document.getElementById(elementId);
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+        }
+
+        function showScanFeedback(message) {
+            const feedback = document.createElement('div');
+            feedback.className = 'scan-feedback';
+            feedback.textContent = message;
+            document.body.appendChild(feedback);
+            setTimeout(() => feedback.remove(), 1000);
+        }
+
+        function playBeep() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        window.exportToExcel = function() {
+            try {
+                if (typeof XLSX === 'undefined') {
+                    alert('Excel library not loaded. Please refresh the page and try again.');
+                    return;
+                }
+                
+                const workbook = XLSX.utils.book_new();
+            
+            // Get current date and time
+            const now = new Date();
+            const dateStr = now.toLocaleDateString();
+            const timeStr = now.toLocaleTimeString();
+            
+            // Calculate audit results
+            const scannedSKUs = Object.keys(scannedItems);
+            const inventorySKUs = inventory.map(i => i.sku);
+            
+            const missing = inventory.filter(item => !scannedItems[item.sku]);
+            const extra = scannedSKUs.filter(sku => !inventorySKUs.includes(sku)).map(sku => ({
+                sku: sku,
+                name: scannedItems[sku].name,
+                scanned: scannedItems[sku].count
+            }));
+            
+            const mismatch = [];
+            const matched = [];
+            
+            inventory.forEach(item => {
+                if (scannedItems[item.sku]) {
+                    const scannedQty = scannedItems[item.sku].count;
+                    if (scannedQty === item.quantity) {
+                        matched.push(item);
+                    } else {
+                        mismatch.push({
+                            sku: item.sku,
+                            name: item.name,
+                            expected: item.quantity,
+                            scanned: scannedQty,
+                            difference: scannedQty - item.quantity
+                        });
+                    }
+                }
+            });
+            
+            // Summary Sheet
+            const summaryData = [
+                ['Stock Audit Report'],
+                ['Date:', dateStr],
+                ['Time:', timeStr],
+                [''],
+                ['Summary Statistics'],
+                ['Total Items in Inventory:', inventory.length],
+                ['Total Items Scanned:', Object.values(scannedItems).reduce((sum, item) => sum + item.count, 0)],
+                ['Unique Items Scanned:', Object.keys(scannedItems).length],
+                ['Items Matched:', matched.length],
+                ['Items Missing:', missing.length],
+                ['Quantity Mismatches:', mismatch.length],
+                ['Extra Items:', extra.length]
+            ];
+            
+            const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+            
+            // Matched Items Sheet (GREEN - Correct)
+            if (matched.length > 0) {
+                const matchedData = [
+                    ['Matched Items (Correct Quantity)'],
+                    ['SKU', 'Product Name', 'Quantity'],
+                    ...matched.map(item => [item.sku, item.name, item.quantity])
+                ];
+                const matchedSheet = XLSX.utils.aoa_to_sheet(matchedData);
+                XLSX.utils.book_append_sheet(workbook, matchedSheet, 'Matched Items');
+            }
+            
+            // Missing Items Sheet (RED - Not Scanned)
+            if (missing.length > 0) {
+                const missingData = [
+                    ['Missing Items (Not Scanned)'],
+                    ['SKU', 'Product Name', 'Expected Quantity'],
+                    ...missing.map(item => [item.sku, item.name, item.quantity])
+                ];
+                const missingSheet = XLSX.utils.aoa_to_sheet(missingData);
+                XLSX.utils.book_append_sheet(workbook, missingSheet, 'Missing Items');
+            }
+            
+            // Quantity Mismatches Sheet
+            if (mismatch.length > 0) {
+                const mismatchData = [
+                    ['Quantity Mismatches'],
+                    ['SKU', 'Product Name', 'Expected Qty', 'Scanned Qty', 'Difference'],
+                    ...mismatch.map(item => [item.sku, item.name, item.expected, item.scanned, item.difference])
+                ];
+                const mismatchSheet = XLSX.utils.aoa_to_sheet(mismatchData);
+                XLSX.utils.book_append_sheet(workbook, mismatchSheet, 'Quantity Mismatches');
+            }
+            
+            // Extra Items Sheet
+            if (extra.length > 0) {
+                const extraData = [
+                    ['Extra Items (Not in Inventory)'],
+                    ['SKU', 'Product Name', 'Scanned Quantity'],
+                    ...extra.map(item => [item.sku, item.name, item.scanned])
+                ];
+                const extraSheet = XLSX.utils.aoa_to_sheet(extraData);
+                XLSX.utils.book_append_sheet(workbook, extraSheet, 'Extra Items');
+            }
+            
+            // Complete Inventory with Status
+            const inventoryData = [
+                ['Complete Inventory Status'],
+                ['SKU', 'Product Name', 'Expected Qty', 'Scanned Qty', 'Status', 'Color Code'],
+                ...inventory.map(item => {
+                    const scannedQty = scannedItems[item.sku] ? scannedItems[item.sku].count : 0;
+                    let status = 'Missing (Not Scanned)';
+                    let colorCode = 'RED';
+                    
+                    if (scannedQty === item.quantity && scannedQty > 0) {
+                        status = 'Match';
+                        colorCode = 'GREEN';
+                    } else if (scannedQty > 0) {
+                        status = 'Mismatch';
+                        colorCode = 'BLUE';
+                    }
+                    
+                    return [item.sku, item.name, item.quantity, scannedQty, status, colorCode];
+                })
+            ];
+            
+            // Add extra items to inventory sheet
+            const inventorySKUs = inventory.map(i => i.sku);
+            scannedSKUs.forEach(sku => {
+                if (!inventorySKUs.includes(sku)) {
+                    inventoryData.push([
+                        sku,
+                        scannedItems[sku].name,
+                        0,
+                        scannedItems[sku].count,
+                        'Extra (Not in Inventory)',
+                        'BLUE'
+                    ]);
+                }
+            });
+            
+            const inventorySheet = XLSX.utils.aoa_to_sheet(inventoryData);
+            XLSX.utils.book_append_sheet(workbook, inventorySheet, 'Full Inventory');
+            
+            // Generate filename with date
+            const filename = `Stock_Audit_Report_${dateStr.replace(/\//g, '-')}.xlsx`;
+            
+            // Download
+            XLSX.writeFile(workbook, filename);
+            
+            // Show success message
+            showScanFeedback('✅ Excel report downloaded!');
+            } catch (error) {
+                console.error('Excel export error:', error);
+                alert('Error generating Excel file: ' + error.message);
+            }
+        }
+
+        window.exportToPDF = function() {
+            try {
+                if (typeof window.jspdf === 'undefined') {
+                    alert('PDF library not loaded. Please refresh the page and try again.');
+                    return;
+                }
+                
+                const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Get current date and time
+            const now = new Date();
+            const dateStr = now.toLocaleDateString();
+            const timeStr = now.toLocaleTimeString();
+            
+            // Calculate audit results
+            const scannedSKUs = Object.keys(scannedItems);
+            const inventorySKUs = inventory.map(i => i.sku);
+            
+            const missing = inventory.filter(item => !scannedItems[item.sku]);
+            const extra = scannedSKUs.filter(sku => !inventorySKUs.includes(sku)).map(sku => ({
+                sku: sku,
+                name: scannedItems[sku].name,
+                scanned: scannedItems[sku].count
+            }));
+            
+            const mismatch = [];
+            const matched = [];
+            
+            inventory.forEach(item => {
+                if (scannedItems[item.sku]) {
+                    const scannedQty = scannedItems[item.sku].count;
+                    if (scannedQty === item.quantity) {
+                        matched.push(item);
+                    } else {
+                        mismatch.push({
+                            sku: item.sku,
+                            name: item.name,
+                            expected: item.quantity,
+                            scanned: scannedQty,
+                            difference: scannedQty - item.quantity
+                        });
+                    }
+                }
+            });
+            
+            let yPosition = 20;
+            
+            // Title
+            doc.setFontSize(20);
+            doc.setTextColor(102, 126, 234);
+            doc.text('Stock Audit Report', 105, yPosition, { align: 'center' });
+            
+            yPosition += 10;
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Generated on: ${dateStr} at ${timeStr}`, 105, yPosition, { align: 'center' });
+            
+            yPosition += 15;
+            
+            // Summary Statistics
+            doc.setFontSize(14);
+            doc.setTextColor(0, 0, 0);
+            doc.text('Summary Statistics', 14, yPosition);
+            yPosition += 10;
+            
+            const summaryData = [
+                ['Total Items in Inventory', inventory.length.toString()],
+                ['Total Items Scanned', Object.values(scannedItems).reduce((sum, item) => sum + item.count, 0).toString()],
+                ['Unique Items Scanned', Object.keys(scannedItems).length.toString()],
+                ['Items Matched', matched.length.toString()],
+                ['Items Missing', missing.length.toString()],
+                ['Quantity Mismatches', mismatch.length.toString()],
+                ['Extra Items Found', extra.length.toString()]
+            ];
+            
+            doc.autoTable({
+                startY: yPosition,
+                head: [['Metric', 'Count']],
+                body: summaryData,
+                theme: 'striped',
+                headStyles: { fillColor: [102, 126, 234] },
+                margin: { left: 14, right: 14 }
+            });
+            
+            yPosition = doc.lastAutoTable.finalY + 15;
+            
+            // Matched Items (GREEN)
+            if (matched.length > 0) {
+                if (yPosition > 250) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                
+                doc.setFontSize(14);
+                doc.setTextColor(16, 185, 129);
+                doc.text('✅ Matched Items (Correct Quantity)', 14, yPosition);
+                yPosition += 7;
+                
+                const matchedData = matched.map(item => [
+                    item.sku,
+                    item.name,
+                    item.quantity.toString()
+                ]);
+                
+                doc.autoTable({
+                    startY: yPosition,
+                    head: [['SKU', 'Product Name', 'Quantity']],
+                    body: matchedData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [16, 185, 129] },
+                    margin: { left: 14, right: 14 }
+                });
+                
+                yPosition = doc.lastAutoTable.finalY + 15;
+            }
+            
+            // Missing Items
+            if (missing.length > 0) {
+                if (yPosition > 250) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                
+                doc.setFontSize(14);
+                doc.setTextColor(255, 107, 107);
+                doc.text('❌ Missing Items (Not Scanned)', 14, yPosition);
+                yPosition += 7;
+                
+                const missingData = missing.map(item => [
+                    item.sku,
+                    item.name,
+                    item.quantity.toString()
+                ]);
+                
+                doc.autoTable({
+                    startY: yPosition,
+                    head: [['SKU', 'Product Name', 'Expected Qty']],
+                    body: missingData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [255, 107, 107] },
+                    margin: { left: 14, right: 14 }
+                });
+                
+                yPosition = doc.lastAutoTable.finalY + 15;
+            }
+            
+            // Quantity Mismatches
+            if (mismatch.length > 0) {
+                if (yPosition > 250) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                
+                doc.setFontSize(14);
+                doc.setTextColor(79, 172, 254);
+                doc.text('⚠️ Quantity Mismatches', 14, yPosition);
+                yPosition += 7;
+                
+                const mismatchData = mismatch.map(item => {
+                    const sign = item.difference > 0 ? '+' : '';
+                    return [
+                        item.sku,
+                        item.name,
+                        item.expected.toString(),
+                        item.scanned.toString(),
+                        sign + item.difference.toString()
+                    ];
+                });
+                
+                doc.autoTable({
+                    startY: yPosition,
+                    head: [['SKU', 'Product Name', 'Expected', 'Scanned', 'Diff']],
+                    body: mismatchData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [79, 172, 254] },
+                    margin: { left: 14, right: 14 }
+                });
+                
+                yPosition = doc.lastAutoTable.finalY + 15;
+            }
+            
+            // Extra Items
+            if (extra.length > 0) {
+                if (yPosition > 250) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                
+                doc.setFontSize(14);
+                doc.setTextColor(254, 202, 87);
+                doc.text('➕ Extra Items (Not in Inventory)', 14, yPosition);
+                yPosition += 7;
+                
+                const extraData = extra.map(item => [
+                    item.sku,
+                    item.name,
+                    item.scanned.toString()
+                ]);
+                
+                doc.autoTable({
+                    startY: yPosition,
+                    head: [['SKU', 'Product Name', 'Scanned Qty']],
+                    body: extraData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [254, 202, 87] },
+                    margin: { left: 14, right: 14 }
+                });
+            }
+            
+            // Add footer with page numbers
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(
+                    `Page ${i} of ${pageCount}`,
+                    doc.internal.pageSize.getWidth() / 2,
+                    doc.internal.pageSize.getHeight() - 10,
+                    { align: 'center' }
+                );
+            }
+
+            // Add new page for complete color-coded inventory
+            doc.addPage();
+            yPosition = 20;
+
+            doc.setFontSize(16);
+            doc.setTextColor(102, 126, 234);
+            doc.text('Complete Inventory Status (Color-Coded)', 14, yPosition);
+            yPosition += 10;
+
+            // Legend
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            doc.text('Legend:', 14, yPosition);
+            yPosition += 7;
+            
+            // Green box
+            doc.setFillColor(40, 167, 69);
+            doc.rect(14, yPosition - 3, 4, 4, 'F');
+            doc.text('Match (Green)', 20, yPosition);
+            
+            // Blue box
+            doc.setFillColor(23, 162, 184);
+            doc.rect(60, yPosition - 3, 4, 4, 'F');
+            doc.text('Mismatch/Extra (Blue)', 66, yPosition);
+            
+            // Red box
+            doc.setFillColor(220, 53, 69);
+            doc.rect(130, yPosition - 3, 4, 4, 'F');
+            doc.text('Missing (Red)', 136, yPosition);
+            
+            yPosition += 10;
+
+            // Build complete inventory data with color coding
+            const completeInventoryData = [];
+            
+            // Add all inventory items
+            inventory.forEach(item => {
+                const scannedQty = scannedItems[item.sku] ? scannedItems[item.sku].count : 0;
+                let status = 'Missing';
+                let rowColor = [248, 215, 218]; // Red background
+                
+                if (scannedQty === item.quantity && scannedQty > 0) {
+                    status = 'Match';
+                    rowColor = [212, 237, 218]; // Green background
+                } else if (scannedQty > 0) {
+                    status = 'Mismatch';
+                    rowColor = [209, 236, 241]; // Blue background
+                }
+                
+                completeInventoryData.push({
+                    data: [item.sku, item.name, item.quantity.toString(), scannedQty.toString(), status],
+                    color: rowColor
+                });
+            });
+
+            // Add extra items
+            const inventorySKUs = inventory.map(i => i.sku);
+            scannedSKUs.forEach(sku => {
+                if (!inventorySKUs.includes(sku)) {
+                    completeInventoryData.push({
+                        data: [sku, scannedItems[sku].name, '0', scannedItems[sku].count.toString(), 'Extra'],
+                        color: [209, 236, 241] // Blue background
+                    });
+                }
+            });
+
+            // Create table with conditional row colors
+            doc.autoTable({
+                startY: yPosition,
+                head: [['SKU', 'Product Name', 'Expected', 'Scanned', 'Status']],
+                body: completeInventoryData.map(item => item.data),
+                theme: 'grid',
+                headStyles: { fillColor: [102, 126, 234] },
+                margin: { left: 14, right: 14 },
+                didParseCell: function(data) {
+                    if (data.section === 'body') {
+                        const rowIndex = data.row.index;
+                        data.cell.styles.fillColor = completeInventoryData[rowIndex].color;
+                    }
+                }
+            });
+            
+            // Generate filename with date
+            const filename = `Stock_Audit_Report_${dateStr.replace(/\//g, '-')}.pdf`;
+            
+            // Download
+            doc.save(filename);
+            
+            // Show success message
+            showScanFeedback('✅ PDF report downloaded!');
+            } catch (error) {
+                console.error('PDF export error:', error);
+                alert('Error generating PDF file: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
